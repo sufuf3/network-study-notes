@@ -80,11 +80,11 @@ Only  for expository purposes only
 An upper-layer protocol module 是指定一個 IP host group address 當作是目的主機。  
 However, a number of extensions may be necessary or desirable.  
 
-1. service interface 必須提供 upper-layer protocol 來指定 an outgoing multicast datagram 的 IP TTL 方式。
+1. service interface 必須提供 upper-layer protocol 來指定 an outgoing multicast datagram 的 IP TTL 方式。  
 如果 upper-layer protocol 沒有指定 TTL ，則 TTL 預設是 1。  
-2. service interface 必須提供 upper-layer protocol 來指定哪一個是 multicast transmission 的 network interface 方式，當對於可能連接到多個 network 的 host。
+2. service interface 必須提供 upper-layer protocol 來指定哪一個是 multicast transmission 的 network interface 方式，當對於可能連接到多個 network 的 host。  
 初始傳輸僅使用一個 interface ; 如有必要，multicast routers 會負責轉發到任何其他 networks。 如果 upper-layer protocol 選擇不識別出 interface ，則應該使用 default interface。  
-3. (Only for level 2) service interface 必須提供 upper-layer protocol 來禁止 datagram 的本地傳送方式，當 Sender 的 host 是 group 中的成員。
+3. (Only for level 2) service interface 必須提供 upper-layer protocol 來禁止 datagram 的本地傳送方式，當 Sender 的 host 是 group 中的成員。  
 by default, a copy of the datagram is looped back  
 This is a performance optimization for upper-layer protocols that restrict the membership of a group to one process per host (such as a routing protocol), or that handle loopback of group communication at a higher layer (such as a multicast transport protocol).  
 
@@ -118,15 +118,68 @@ All IP host group addresses might be mapped to the well-known local address of a
 
 ### 1. Extensions to the IP Service Interface
 
+- IP service interface must be extended to provide two new operations:
+    - JoinHostGroup  ( group-address, interface )
+        - this host become a member of the host group identified by "group-address" on the given network interface
+    - LeaveHostGroup ( group-address, interface )
+        -  this host give up its membership in the host group identified by "group-address" on the given network interface
+It is permissible to join the same group on more than one interface  
+
 ### 2. Extensions to the IP Module
+為了支援 multicast IP datagram 接收，必須擴展 IP module 以維護與每個 network interface 關聯的主機組成員關係列表。  
+ An incoming datagram with an IP host group address in its source address field is quietly discarded.  An ICMP error message (Destination Unreachable, Time Exceeded, Parameter Problem, Source Quench, or Redirect) is never generated in response to a datagram destined to an IP host group.  
+The list of host group memberships is updated in response to JoinHostGroup and LeaveHostGroup requests from upper-layer protocols. Each membership should have an associated reference count or similar mechanism to handle multiple requests to join and leave the same group.  On the first request to join and the last request to leave a group on a given interface, the local network module for that interface is notified, so that it may update its multicast reception filter.  
+
+IP module must also be extended  
+IGMP is used to keep neighboring multicast routers informed of the host group memberships present on a particular local network.  
+To support IGMP, every level 2 host must join the "all-hosts" group (address 224.0.0.1) on each network interface at initialization time and must remain a member for as long as the host is active.  
+
 ### 3. Extensions to the Local Network Service Interface
+Incoming local network multicast packets are delivered to the IP module using the same "Receive Local" operation as local network unicast packets.  
+the local network service interface is extended to provide two new operations:  
+- JoinLocalGroup  ( group-address )
+    - requests the local network module to accept and deliver up subsequently arriving packets destined to the given IP host group address
+- LeaveLocalGroup ( group-address )
+    - requests the local network module to stop delivering up packets destined to the given IP host group address.
+
+ "group-address" is an IP host group address  
+ The local network module is expected to map the IP host group addresses to local network addresses as required to update its multicast reception filter.  
+Any local network module is free to ignore LeaveLocalGroup requests, and may deliver up packets destined to more addresses than just those specified in JoinLocalGroup requests, if it is unable to filter incoming packets adequately.  
+  
+   The local network module must not deliver up any multicast packets that were transmitted from that module; loopback of multicasts is handled at the IP layer or higher.  
 ### 4. Extensions to an Ethernet Local Network Module
 ### 5. Extensions to Local Network Modules other than Ethernet
+all incoming broadcast packets can be accepted and passed to the IP module for IP-level filtering.  On point-to-point or store-and-forward networks, multicast IP datagrams will arrive as local network unicasts, so no change to the local network module should be necessary.  
 
 ## Internet Group Management Protocol (IGMP)
+- is used by IP hosts to report their host group memberships to any immediately-neighboring multicast routers
+-  an asymmetric protocol
+
 ### IGMP messages format
+- IGMP messages of concern to hosts have the following format:
+```
+
+       0                   1                   2                   3
+       0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+      +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+      |Version| Type  |    Unused     |           Checksum            |
+      +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+      |                         Group Address                         |
+      +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+```
+- Type: There are two types of IGMP message of concern to hosts:
+    - 1 = Host Membership Query
+    - 2 = Host Membership Report
+- Group Address
+    - In a Host Membership Query message, the group address field is zeroed when sent, ignored when received.
+    - In a Host Membership Report message, the group address field holds the IP host group address of the group being reported.
+
 ### Informal Protocol Description
+
 ### State Transition Diagram
+- Non-Member state
+- Delaying Member state
+- Idle Member state
 ### 導致 IGMP 狀態轉換的五個 significant events
 - **join group**
 - **leave group**
@@ -137,6 +190,36 @@ All IP host group addresses might be mapped to the well-known local address of a
 - **send report**
 - **start timer**
 - **stop timer**
+
+### diagram
+```
+                              ________________
+                             |                |
+                             |                |
+                             |                |
+                             |                |
+                   --------->|   Non-Member   |<---------
+                  |          |                |          |
+                  |          |                |          |
+                  |          |                |          |
+                  |          |________________|          |
+                  |                   |                  |
+                  | leave group       | join group       | leave group
+                  | (stop timer)      |(send report,     |
+                  |                   | start timer)     |
+          ________|________           |          ________|________
+         |                 |<---------          |                 |
+         |                 |                    |                 |
+         |                 |<-------------------|                 |
+         |                 |   query received   |                 |
+         | Delaying Member |    (start timer)   |   Idle Member   |
+         |                 |------------------->|                 |
+         |                 |   report received  |                 |
+         |                 |    (stop timer)    |                 |
+         |_________________|------------------->|_________________|
+                                timer expired
+                                (send report)
+```
 
 ## References
 - https://ithelp.ithome.com.tw/articles/10067356
