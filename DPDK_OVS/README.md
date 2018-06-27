@@ -33,7 +33,7 @@
 因為 packet buffers 需要使用到 很大的 memory pool allocation ，所以需要使用到 Hugepage。這意味著 HUGETLBFS 選項需要在 running 的 kernel 中啟用。  
 使用 hugepage allocations ，可以使用更少 page 並提高效能，可以減少 TLBs(Translation Lookaside Buffers)，減少虛擬的 page address 轉換到物理的 page address。如果沒有 hugepage，TLB 缺失率會變高，因為會發生在使用標準的 4k page size，降低。  
 
-> 複習 or 補充：[Memory  管理的 page 架構](https://www.csie.ntu.edu.tw/~wcchen/asm98/asm/proj/b85506061/chap2/paging.html)、[hugetlbpage](https://github.com/torvalds/linux/blob/master/Documentation/admin-guide/mm/hugetlbpage.rst)、[Open vSwitch-DPDK 需要使用多少 Hugepage Memory](https://developers.redhat.com/blog/2018/03/16/ovs-dpdk-hugepage-memory/)
+> 複習 or 補充：[Memory  管理的 page 架構](https://www.csie.ntu.edu.tw/~wcchen/asm98/asm/proj/b85506061/chap2/paging.html)、[hugetlbpage](https://github.com/torvalds/linux/blob/master/Documentation/admin-guide/mm/hugetlbpage.rst)、[Open vSwitch-DPDK 需要使用多少 Hugepage Memory](https://developers.redhat.com/blog/2018/03/16/ovs-dpdk-hugepage-memory/)  
 > 其他：https://www.kernel.org/doc/Documentation/vm/hugetlbpage.txt, https://github.com/torvalds/linux/blob/master/Documentation/vm/hugetlbfs_reserv.rst
 
 ### 前置作業設定與套件安裝操作(在 Ubuntu 16.04 進行)
@@ -129,7 +129,7 @@ $ sudo modprobe uio
 $ sudo insmod ${DPDK_DIR}/x86_64-native-linuxapp-gcc/kmod/igb_uio.ko
 ```
 
-PS. 與 UIO 相比，[VFIO](https://github.com/torvalds/linux/tree/master/drivers/vfio) driver 更加強大與安全(http://doc.dpdk.org/guides/linux_gsg/linux_drivers.html)。但這次不用。  
+PS. 與 UIO 相比，[VFIO](https://github.com/torvalds/linux/tree/master/drivers/vfio) driver 更加強大與安全(http://doc.dpdk.org/guides/linux_gsg/linux_drivers.html )。但這次不用。  
 
 ### 3. 開機後還是可以 load UIO 的設定
 ```
