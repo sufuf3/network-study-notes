@@ -22,9 +22,32 @@
 
 ## LTE 網路架構
 - 三個 components：
-    - The User Equipment (UE).
-    - The Evolved UMTS Terrestrial Radio Access Network (E-UTRAN).
-    - The Evolved Packet Core (EPC).
+    - **The User Equipment (UE) = Mobile Equipment (ME)**
+        - The modules of ME:
+            - Mobile Termination (MT) : 處理所有 communication functions
+            - Terminal Equipment (TE) : 終止 data streams
+            - Universal Integrated Circuit Card (UICC) : 就是 SIM 卡 (for LTE equipments). It runs an application known as the Universal Subscriber Identity Module (USIM). USIM 可以保密隱私資訊，包含 使用者手機號碼 home network identity and security keys etc.
+    - **The Evolved UMTS Terrestrial Radio Access Network (E-UTRAN).**
+        - architecture:
+            ![](https://www.tutorialspoint.com/lte/images/lte_e_utran.jpg)  
+        - E-UTRAN 處理手機(UE)和 EPC 之間的通訊。
+        - 基地台名字(the evolved base stations)叫 eNodeB 或是 eNB。
+        - 一個 eNB 可以處理 UE 在一個或多個 cells 中。
+        - LTE 的 UE 一次只在一個 cell 中與一個 eNB 溝通。
+        - eNB 主要的功能：
+            - eNB 透過使用 LTE 空中架構的 analogue and digital signal processing 功能，傳送與接收無線電給所有的 UE。
+            - 控制所有手機的 low-level operation, by sending them signalling messages such as handover commands.
+        - eNB interface: **S1** to EPC, **X2** to nearby eNB(主要用於切換過程中的 signalling 和 packet 轉發)
+            ![](https://i.imgur.com/vHaKsjv.png)  
+        - home eNB (HeNB) is a base station
+    - **The Evolved Packet Core (EPC).**
+        - The core network
+        - architecture:
+            ![](https://www.tutorialspoint.com/lte/images/lte_epc.jpg)  
+        - Move to [EPC.md](EPC.md)
+
+## E-UTRAN 和 EPC 的功能劃分
+![](https://www.tutorialspoint.com/lte/images/lte_epc_eutran.jpg)  
 
 ![](https://www.tutorialspoint.com/lte/images/lte_architecture.jpg)  
 From: https://www.tutorialspoint.com/lte  
